@@ -1,0 +1,2576 @@
+Loading tilelang libs from dev root: /home/test/lanhu/tilelang-dlc/build
+======================================================================
+Compiling DLC Vector Addition Kernel
+======================================================================
+Matrix size: 1024 x 1024
+Block size: 128 x 256
+2026-02-05 09:52:35  [TileLang:tilelang.jit.kernel:INFO]: TileLang begins to compile kernel `main` with `out_idx=[-1]`
+
+================================================================================
+After Before BindTarget:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            bx_1: T.int32 = bx // 4
+            by: T.int32 = bx % 4
+            T.copy(T.region(A[bx_1 * 128, by * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx_1 * 128, by * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx_1 * 128, by * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After BindTarget:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            bx_1: T.int32 = bx // 4
+            by: T.int32 = bx % 4
+            T.copy(T.region(A[bx_1 * 128, by * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx_1 * 128, by * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx_1 * 128, by * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After AddWrapperForSingleBufStore:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            bx_1: T.int32 = bx // 4
+            by: T.int32 = bx % 4
+            T.copy(T.region(A[bx_1 * 128, by * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx_1 * 128, by * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx_1 * 128, by * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After LegalizeNegativeIndex:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            bx_1: T.int32 = bx // 4
+            by: T.int32 = bx % 4
+            T.copy(T.region(A[bx_1 * 128, by * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx_1 * 128, by * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx_1 * 128, by * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After VerifyParallelLoop:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            bx_1: T.int32 = bx // 4
+            by: T.int32 = bx % 4
+            T.copy(T.region(A[bx_1 * 128, by * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx_1 * 128, by * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx_1 * 128, by * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After InjectAssumes:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            bx_1: T.int32 = bx // 4
+            by: T.int32 = bx % 4
+            T.copy(T.region(A[bx_1 * 128, by * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx_1 * 128, by * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx_1 * 128, by * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After Simplify (1st):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            T.copy(T.region(A[bx // 4 * 128, bx % 4 * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx // 4 * 128, bx % 4 * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx // 4 * 128, bx % 4 * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After LayoutReducer:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        # with T.block("root"):
+        bx = T.launch_thread("blockIdx.x", 32)
+        with T.block("tilelang_root"):
+            T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+            T.writes()
+            T.block_attr({"tilelang.is_dlc_kernel_frame": True})
+            a_local = T.alloc_buffer((128, 256), scope="local")
+            b_local = T.alloc_buffer((128, 256), scope="local")
+            c_local = T.alloc_buffer((128, 256), scope="local")
+            T.copy(T.region(A[bx // 4 * 128, bx % 4 * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+            T.copy(T.region(B[bx // 4 * 128, bx % 4 * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+            T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx // 4 * 128, bx % 4 * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After LayoutInference:
+================================================================================
+[09:52:35] /home/test/lanhu/tilelang-dlc/src/op/copy.cc:723: Warning: Copy from local buffer `c_local` to global buffer `C` may cause conflicted write.
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                T.copy(T.region(A[bx // 4 * 128, bx % 4 * 256], 1, 128, 256), T.region(a_local[0, 0], 2, 128, 256))
+                T.copy(T.region(B[bx // 4 * 128, bx % 4 * 256], 1, 128, 256), T.region(b_local[0, 0], 2, 128, 256))
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                T.copy(T.region(c_local[0, 0], 1, 128, 256), T.region(C[bx // 4 * 128, bx % 4 * 256], 2, 128, 256))
+================================================================================
+
+
+================================================================================
+After LowerTileOp:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = A[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = B[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256] = c_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256]
+================================================================================
+
+
+================================================================================
+After LowerL2Persistent:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = A[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = B[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256] = c_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256]
+================================================================================
+
+
+================================================================================
+After DecoupleTypeCast:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = A[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = B[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256] = c_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256]
+================================================================================
+
+
+================================================================================
+After LegalizeVectorizedLoop:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = A[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = B[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256] = c_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256]
+================================================================================
+
+
+================================================================================
+After LegalizeSafeMemoryAccess:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = A[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256] = B[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + (i_j_fused * 4 + vec) % 32768 // 256, bx % 4 * 256 + (i_j_fused * 4 + vec) % 256] = c_local[(i_j_fused * 4 + vec) % 32768 // 256, (i_j_fused * 4 + vec) % 256]
+================================================================================
+
+
+================================================================================
+After Simplify (2nd):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After HoistNonRestrictParams:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After LowerSharedBarrier:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After LowerSharedTmem:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After IfStmtBinding (non-TMA path):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After PlanAndUpdateBufferAllocationLocation:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After PipelinePlanning (non-TMA path):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            T.reads()
+            T.writes()
+            T.block_attr({"layout_map": {}})
+            bx = T.launch_thread("blockIdx.x", 32)
+            with T.block("tilelang_root"):
+                T.reads(A[bx // 4 * 128, bx % 4 * 256], B[bx // 4 * 128, bx % 4 * 256], C[bx // 4 * 128, bx % 4 * 256])
+                T.writes()
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), scope="local")
+                b_local = T.alloc_buffer((128, 256), scope="local")
+                c_local = T.alloc_buffer((128, 256), scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After InjectSoftwarePipeline (non-TMA path):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        with T.block("root"):
+            bx = T.int32()
+            T.reads(A[bx // 4 * 128:bx // 4 * 128 + 128, bx % 4 * 256:bx % 4 * 256 + 256], B[bx // 4 * 128:bx // 4 * 128 + 128, bx % 4 * 256:bx % 4 * 256 + 256])
+            T.writes(C[bx // 4 * 128:bx // 4 * 128 + 128, bx % 4 * 256:bx % 4 * 256 + 256])
+            T.block_attr({"layout_map": {}})
+            T.launch_thread(bx, 32)
+            with T.block("tilelang_root"):
+                a_local = T.Buffer((128, 256), scope="local")
+                b_local = T.Buffer((128, 256), scope="local")
+                c_local = T.Buffer((128, 256), scope="local")
+                T.reads(A[bx // 4 * 128:bx // 4 * 128 + 128, bx % 4 * 256:bx % 4 * 256 + 256], B[bx // 4 * 128:bx // 4 * 128 + 128, bx % 4 * 256:bx % 4 * 256 + 256], a_local[0:128, 0:256], b_local[0:128, 0:256], c_local[0:128, 0:256])
+                T.writes(a_local[0:128, 0:256], b_local[0:128, 0:256], c_local[0:128, 0:256], C[bx // 4 * 128:bx // 4 * 128 + 128, bx % 4 * 256:bx % 4 * 256 + 256])
+                T.block_attr({"layout_map": {}, "tilelang.is_dlc_kernel_frame": True})
+                a_local = T.alloc_buffer((128, 256), data=a_local.data, scope="local")
+                b_local = T.alloc_buffer((128, 256), data=b_local.data, scope="local")
+                c_local = T.alloc_buffer((128, 256), data=c_local.data, scope="local")
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+                T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+                for i_j_fused in T.parallel(8192):
+                    for vec in T.vectorized(4):
+                        C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After LowerOpaqueBlock (final):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.decl_buffer((128, 256), scope="local")
+        b_local = T.decl_buffer((128, 256), scope="local")
+        c_local = T.decl_buffer((128, 256), scope="local")
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After Simplify (OptimizeForTarget 1st):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.decl_buffer((128, 256), scope="local")
+        b_local = T.decl_buffer((128, 256), scope="local")
+        c_local = T.decl_buffer((128, 256), scope="local")
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After NarrowDataType:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.decl_buffer((128, 256), scope="local")
+        b_local = T.decl_buffer((128, 256), scope="local")
+        c_local = T.decl_buffer((128, 256), scope="local")
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                a_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = A[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                b_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec] = B[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local.data, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local.data, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local.data, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                C[bx // 4 * 128 + i_j_fused // 64, bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local[i_j_fused // 64, i_j_fused % 64 * 4 + vec]
+================================================================================
+
+
+================================================================================
+After FlattenBuffer:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+                A_1 = T.Buffer((1048576,), data=A.data)
+                a_local_1[i_j_fused * 4 + vec] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+                B_1 = T.Buffer((1048576,), data=B.data)
+                b_local_1[i_j_fused * 4 + vec] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                C_1 = T.Buffer((1048576,), data=C.data)
+                c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+                C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local_1[i_j_fused * 4 + vec]
+================================================================================
+
+
+================================================================================
+After ConfigIndexBitwidth:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+                A_1 = T.Buffer((1048576,), data=A.data)
+                a_local_1[i_j_fused * 4 + vec] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+                B_1 = T.Buffer((1048576,), data=B.data)
+                b_local_1[i_j_fused * 4 + vec] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                C_1 = T.Buffer((1048576,), data=C.data)
+                c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+                C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local_1[i_j_fused * 4 + vec]
+================================================================================
+
+
+================================================================================
+After Simplify (OptimizeForTarget 2nd):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+                A_1 = T.Buffer((1048576,), data=A.data)
+                a_local_1[i_j_fused * 4 + vec] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+                B_1 = T.Buffer((1048576,), data=B.data)
+                b_local_1[i_j_fused * 4 + vec] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            for vec in T.vectorized(4):
+                C_1 = T.Buffer((1048576,), data=C.data)
+                c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+                C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + vec] = c_local_1[i_j_fused * 4 + vec]
+================================================================================
+
+
+================================================================================
+After VectorizeLoop:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After StorageRewrite:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After UnrollLoop:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After RenormalizeSplitPattern:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After Simplify (OptimizeForTarget 3rd):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After RemoveNoOp:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After HoistIfThenElse:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After VerifyMemory:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""})})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After AnnotateEntryFunc:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After InferFragment:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After LowerThreadAllreduce:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After LowerLDGSTG:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After LowerHopperIntrin:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After AnnotateDeviceRegions:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        T.attr(T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "target", 0)
+        bx = T.launch_thread("blockIdx.x", 32)
+        a_local = T.allocate([32768], "float32", "local")
+        b_local = T.allocate([32768], "float32", "local")
+        c_local = T.allocate([32768], "float32", "local")
+        for i_j_fused in T.parallel(8192):
+            a_local_1 = T.Buffer((32768,), data=a_local, scope="local")
+            A_1 = T.Buffer((1048576,), data=A.data)
+            a_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = A_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        for i_j_fused in T.parallel(8192):
+            b_local_1 = T.Buffer((32768,), data=b_local, scope="local")
+            B_1 = T.Buffer((1048576,), data=B.data)
+            b_local_1[i_j_fused * 4:i_j_fused * 4 + 4] = B_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+        T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+        for i_j_fused in T.parallel(8192):
+            C_1 = T.Buffer((1048576,), data=C.data)
+            c_local_1 = T.Buffer((32768,), data=c_local, scope="local")
+            C_1[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_1[i_j_fused * 4:i_j_fused * 4 + 4]
+================================================================================
+
+
+================================================================================
+After SplitHostDevice:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": []})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After MarkCudaSyncCalls:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": []})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After AnnotateReadOnlyParams:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After MergeSharedMemoryAllocations:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After ThreadSync(shared):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After ThreadSync(shared.dyn):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After MergeIfStmt:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After InjectPTXAsyncCopy:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(A_handle: T.handle, B_handle: T.handle, C_handle: T.handle):
+        T.func_attr({"target": T.target({"host": {"keys": ["cpu"], "kind": "c", "tag": ""}, "keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        A = T.match_buffer(A_handle, (1024, 1024), strides=(1024, 1))
+        B = T.match_buffer(B_handle, (1024, 1024), strides=(1024, 1))
+        C = T.match_buffer(C_handle, (1024, 1024), strides=(1024, 1))
+        kernel_error_code: T.int32 = Module.main_kernel(A.data, B.data, C.data)
+        assert kernel_error_code == 0, "Error executing compute kernel"
+        T.evaluate(0)
+================================================================================
+
+
+================================================================================
+After MakePackedAPI:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(self_handle: T.handle, args: T.handle, num_args: T.int32, result: T.handle("void", "global")) -> T.int32:
+        T.func_attr({"calling_conv": 1, "global_symbol": "__tvm_ffi_main", "target": T.target({"keys": ["cpu"], "kind": "c", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        assert num_args == 3, "main: num_args should be 3"
+        assert not T.isnullptr(args), "main: args pointer is NULL"
+        A_handle_type_index: T.int32 = T.tvm_struct_get(args, 0, 13, "int32")
+        assert A_handle_type_index == 0 or A_handle_type_index == 4 or A_handle_type_index == 7 or A_handle_type_index >= 64, "kernel main input A expected pointer or tensor handle"
+        B_handle_type_index: T.int32 = T.tvm_struct_get(args, 1, 13, "int32")
+        assert B_handle_type_index == 0 or B_handle_type_index == 4 or B_handle_type_index == 7 or B_handle_type_index >= 64, "kernel main input B expected pointer or tensor handle"
+        C_handle_type_index: T.int32 = T.tvm_struct_get(args, 2, 13, "int32")
+        assert C_handle_type_index == 0 or C_handle_type_index == 4 or C_handle_type_index == 7 or C_handle_type_index >= 64, "kernel main input C expected pointer or tensor handle"
+        A_handle: T.handle = T.Select(A_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 0, 15, "handle"), 24), T.tvm_struct_get(args, 0, 15, "handle"))
+        B_handle: T.handle = T.Select(B_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 1, 15, "handle"), 24), T.tvm_struct_get(args, 1, 15, "handle"))
+        C_handle: T.handle = T.Select(C_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 2, 15, "handle"), 24), T.tvm_struct_get(args, 2, 15, "handle"))
+        main_A_is_null: T.bool = T.isnullptr(A_handle)
+        assert not main_A_is_null, "main.A is expected to have non-NULL pointer"
+        main_B_is_null: T.bool = T.isnullptr(B_handle)
+        assert not main_B_is_null, "main.B is expected to have non-NULL pointer"
+        main_C_is_null: T.bool = T.isnullptr(C_handle)
+        assert not main_C_is_null, "main.C is expected to have non-NULL pointer"
+        main_A_shape: T.handle("int64", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 2, "handle"), T.reinterpret("handle", T.uint64(0)))
+        main_A_shape_1 = T.decl_buffer((2,), "int64", data=main_A_shape)
+        main_B_shape: T.handle("int64", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 2, "handle"), T.reinterpret("handle", T.uint64(0)))
+        main_B_shape_1 = T.decl_buffer((2,), "int64", data=main_B_shape)
+        main_C_shape: T.handle("int64", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 2, "handle"), T.reinterpret("handle", T.uint64(0)))
+        main_C_shape_1 = T.decl_buffer((2,), "int64", data=main_C_shape)
+        if not T.bool(False):
+            if not 2 == T.tvm_struct_get(A_handle, 0, 4, "int32"):
+                T.call_packed("__tvm_error_ndim_mismatch", "main", "A", T.int64(2), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 4, "int32")))
+        else:
+            T.evaluate(0)
+        main_A_strides: T.handle("int64", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 3, "handle"), T.reinterpret("handle", T.uint64(0)))
+        main_A_strides_1 = T.decl_buffer((2,), "int64", data=main_A_strides)
+        dev_id: T.int32 = T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 9, "int32"), 0)
+        A: T.handle("float32", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 1, "handle"), T.reinterpret("handle", T.uint64(0)))
+        T.attr(A, "storage_alignment", 64)
+        if not T.bool(False):
+            if not 2 == T.tvm_struct_get(B_handle, 0, 4, "int32"):
+                T.call_packed("__tvm_error_ndim_mismatch", "main", "B", T.int64(2), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 4, "int32")))
+        else:
+            T.evaluate(0)
+        main_B_strides: T.handle("int64", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 3, "handle"), T.reinterpret("handle", T.uint64(0)))
+        main_B_strides_1 = T.decl_buffer((2,), "int64", data=main_B_strides)
+        B: T.handle("float32", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 1, "handle"), T.reinterpret("handle", T.uint64(0)))
+        T.attr(B, "storage_alignment", 64)
+        if not T.bool(False):
+            if not 2 == T.tvm_struct_get(C_handle, 0, 4, "int32"):
+                T.call_packed("__tvm_error_ndim_mismatch", "main", "C", T.int64(2), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 4, "int32")))
+        else:
+            T.evaluate(0)
+        main_C_strides: T.handle("int64", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 3, "handle"), T.reinterpret("handle", T.uint64(0)))
+        main_C_strides_1 = T.decl_buffer((2,), "int64", data=main_C_strides)
+        C: T.handle("float32", "global") = T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 1, "handle"), T.reinterpret("handle", T.uint64(0)))
+        T.attr(C, "storage_alignment", 64)
+        T.attr("default", "device_id", dev_id)
+        T.attr("default", "device_type", 1)
+        if not T.bool(False) and not (T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 5, "uint8"), T.uint8(2)) == T.uint8(2) and T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 6, "uint8"), T.uint8(32)) == T.uint8(32) and T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 7, "uint16"), T.uint16(1)) == T.uint16(1)):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "A", T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 5, "uint8"), T.uint8(2))), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 6, "uint8"), T.uint8(32))), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 7, "uint16"), T.uint16(1))), T.int64(2), T.int64(32), T.int64(1))
+        if not T.bool(False):
+            if not T.Cast("int32", main_A_shape_1[0]) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[0])))
+            if not T.Cast("int32", main_A_shape_1[1]) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[1])))
+            if not T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1])) == 1:
+                T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1]))))
+            if not T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0])) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0]))))
+        if not T.bool(False):
+            if not T.uint64(0) == T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 8, "uint64"), T.uint64(0)):
+                T.call_packed("__tvm_error_byte_offset_mismatch", "main", "A", T.int64(0), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 8, "uint64"), T.uint64(0))))
+        else:
+            T.evaluate(0)
+        if not T.bool(False):
+            if not 1 == T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 10, "int32"), 0):
+                T.call_packed("__tvm_error_device_type_mismatch", "main", "A", T.int64(1), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(A_handle, 0, 10, "int32"), 0)))
+        else:
+            T.evaluate(0)
+        if not T.bool(False):
+            if not T.bool(False):
+                if T.isnullptr(A):
+                    T.call_packed("__tvm_error_null_ptr", "main", "A", "data pointer")
+            else:
+                T.evaluate(0)
+        else:
+            T.evaluate(0)
+        if not T.bool(False) and not (T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 5, "uint8"), T.uint8(2)) == T.uint8(2) and T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 6, "uint8"), T.uint8(32)) == T.uint8(32) and T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 7, "uint16"), T.uint16(1)) == T.uint16(1)):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "B", T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 5, "uint8"), T.uint8(2))), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 6, "uint8"), T.uint8(32))), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 7, "uint16"), T.uint16(1))), T.int64(2), T.int64(32), T.int64(1))
+        if not T.bool(False):
+            if not T.Cast("int32", main_B_shape_1[0]) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[0])))
+            if not T.Cast("int32", main_B_shape_1[1]) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[1])))
+            if not T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1])) == 1:
+                T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1]))))
+            if not T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0])) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0]))))
+        if not T.bool(False):
+            if not T.uint64(0) == T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 8, "uint64"), T.uint64(0)):
+                T.call_packed("__tvm_error_byte_offset_mismatch", "main", "B", T.int64(0), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 8, "uint64"), T.uint64(0))))
+        else:
+            T.evaluate(0)
+        if not T.bool(False):
+            if not T.tvm_struct_get(B_handle, 0, 9, "int32") == T.tvm_struct_get(A_handle, 0, 9, "int32"):
+                T.call_packed("__tvm_error_expect_eq", "main", "B", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 9, "int32")))
+        if not T.bool(False):
+            if not 1 == T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 10, "int32"), 0):
+                T.call_packed("__tvm_error_device_type_mismatch", "main", "B", T.int64(1), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(B_handle, 0, 10, "int32"), 0)))
+        else:
+            T.evaluate(0)
+        if not T.bool(False):
+            if not T.bool(False):
+                if T.isnullptr(B):
+                    T.call_packed("__tvm_error_null_ptr", "main", "B", "data pointer")
+            else:
+                T.evaluate(0)
+        else:
+            T.evaluate(0)
+        if not T.bool(False) and not (T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 5, "uint8"), T.uint8(2)) == T.uint8(2) and T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 6, "uint8"), T.uint8(32)) == T.uint8(32) and T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 7, "uint16"), T.uint16(1)) == T.uint16(1)):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "C", T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 5, "uint8"), T.uint8(2))), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 6, "uint8"), T.uint8(32))), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 7, "uint16"), T.uint16(1))), T.int64(2), T.int64(32), T.int64(1))
+        if not T.bool(False):
+            if not T.Cast("int32", main_C_shape_1[0]) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[0])))
+            if not T.Cast("int32", main_C_shape_1[1]) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[1])))
+            if not T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1])) == 1:
+                T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1]))))
+            if not T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0])) == 1024:
+                T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0]))))
+        if not T.bool(False):
+            if not T.uint64(0) == T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 8, "uint64"), T.uint64(0)):
+                T.call_packed("__tvm_error_byte_offset_mismatch", "main", "C", T.int64(0), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 8, "uint64"), T.uint64(0))))
+        else:
+            T.evaluate(0)
+        if not T.bool(False):
+            if not T.tvm_struct_get(C_handle, 0, 9, "int32") == T.tvm_struct_get(A_handle, 0, 9, "int32"):
+                T.call_packed("__tvm_error_expect_eq", "main", "C", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 9, "int32")))
+        if not T.bool(False):
+            if not 1 == T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 10, "int32"), 0):
+                T.call_packed("__tvm_error_device_type_mismatch", "main", "C", T.int64(1), T.Cast("int64", T.if_then_else(not T.bool(False), T.tvm_struct_get(C_handle, 0, 10, "int32"), 0)))
+        else:
+            T.evaluate(0)
+        if not T.bool(False):
+            if not T.bool(False):
+                if T.isnullptr(C):
+                    T.call_packed("__tvm_error_null_ptr", "main", "C", "data pointer")
+            else:
+                T.evaluate(0)
+        else:
+            T.evaluate(0)
+        A_1 = T.decl_buffer((1024, 1024), data=A, strides=(1024, 1))
+        B_1 = T.decl_buffer((1024, 1024), data=B, strides=(1024, 1))
+        C_1 = T.decl_buffer((1024, 1024), data=C, strides=(1024, 1))
+        with T.attr(0, "compute_scope", "main_compute_"):
+            kernel_error_code: T.int32 = Module.main_kernel(A, B, C)
+            assert kernel_error_code == 0, "Error executing compute kernel"
+            T.evaluate(0)
+        return 0
+================================================================================
+
+
+================================================================================
+After Simplify (OptimizeForTarget final):
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func(private=True)
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "tir.is_global_func": True, "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(self_handle: T.handle, args: T.handle, num_args: T.int32, result: T.handle("void", "global")) -> T.int32:
+        T.func_attr({"calling_conv": 1, "global_symbol": "__tvm_ffi_main", "target": T.target({"keys": ["cpu"], "kind": "c", "tag": ""}), "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        assert num_args == 3, "main: num_args should be 3"
+        assert not T.isnullptr(args), "main: args pointer is NULL"
+        A_handle_type_index: T.int32 = T.tvm_struct_get(args, 0, 13, "int32")
+        assert A_handle_type_index == 0 or A_handle_type_index == 4 or A_handle_type_index == 7 or 64 <= A_handle_type_index, "kernel main input A expected pointer or tensor handle"
+        B_handle_type_index: T.int32 = T.tvm_struct_get(args, 1, 13, "int32")
+        assert B_handle_type_index == 0 or B_handle_type_index == 4 or B_handle_type_index == 7 or 64 <= B_handle_type_index, "kernel main input B expected pointer or tensor handle"
+        C_handle_type_index: T.int32 = T.tvm_struct_get(args, 2, 13, "int32")
+        assert C_handle_type_index == 0 or C_handle_type_index == 4 or C_handle_type_index == 7 or 64 <= C_handle_type_index, "kernel main input C expected pointer or tensor handle"
+        A_handle: T.handle = T.Select(A_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 0, 15, "handle"), 24), T.tvm_struct_get(args, 0, 15, "handle"))
+        B_handle: T.handle = T.Select(B_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 1, 15, "handle"), 24), T.tvm_struct_get(args, 1, 15, "handle"))
+        C_handle: T.handle = T.Select(C_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 2, 15, "handle"), 24), T.tvm_struct_get(args, 2, 15, "handle"))
+        main_A_is_null: T.bool = T.isnullptr(A_handle)
+        assert not main_A_is_null, "main.A is expected to have non-NULL pointer"
+        main_B_is_null: T.bool = T.isnullptr(B_handle)
+        assert not main_B_is_null, "main.B is expected to have non-NULL pointer"
+        main_C_is_null: T.bool = T.isnullptr(C_handle)
+        assert not main_C_is_null, "main.C is expected to have non-NULL pointer"
+        main_A_shape: T.handle("int64", "global") = T.tvm_struct_get(A_handle, 0, 2, "handle")
+        main_A_shape_1 = T.decl_buffer((2,), "int64", data=main_A_shape)
+        main_B_shape: T.handle("int64", "global") = T.tvm_struct_get(B_handle, 0, 2, "handle")
+        main_B_shape_1 = T.decl_buffer((2,), "int64", data=main_B_shape)
+        main_C_shape: T.handle("int64", "global") = T.tvm_struct_get(C_handle, 0, 2, "handle")
+        main_C_shape_1 = T.decl_buffer((2,), "int64", data=main_C_shape)
+        if T.tvm_struct_get(A_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "A", T.int64(2), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 4, "int32")))
+        main_A_strides: T.handle("int64", "global") = T.tvm_struct_get(A_handle, 0, 3, "handle")
+        main_A_strides_1 = T.decl_buffer((2,), "int64", data=main_A_strides)
+        dev_id: T.int32 = T.tvm_struct_get(A_handle, 0, 9, "int32")
+        A: T.handle("float32", "global") = T.tvm_struct_get(A_handle, 0, 1, "handle")
+        T.attr(A, "storage_alignment", 64)
+        if T.tvm_struct_get(B_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "B", T.int64(2), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 4, "int32")))
+        main_B_strides: T.handle("int64", "global") = T.tvm_struct_get(B_handle, 0, 3, "handle")
+        main_B_strides_1 = T.decl_buffer((2,), "int64", data=main_B_strides)
+        B: T.handle("float32", "global") = T.tvm_struct_get(B_handle, 0, 1, "handle")
+        T.attr(B, "storage_alignment", 64)
+        if T.tvm_struct_get(C_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "C", T.int64(2), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 4, "int32")))
+        main_C_strides: T.handle("int64", "global") = T.tvm_struct_get(C_handle, 0, 3, "handle")
+        main_C_strides_1 = T.decl_buffer((2,), "int64", data=main_C_strides)
+        C: T.handle("float32", "global") = T.tvm_struct_get(C_handle, 0, 1, "handle")
+        T.attr(C, "storage_alignment", 64)
+        T.attr("default", "device_id", dev_id)
+        T.attr("default", "device_type", 1)
+        if T.tvm_struct_get(A_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(A_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(A_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "A", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_A_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[0])))
+        if T.Cast("int32", main_A_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(A_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "A", T.int64(0), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(A_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "A", T.int64(1), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 10, "int32")))
+        if T.isnullptr(A):
+            T.call_packed("__tvm_error_null_ptr", "main", "A", "data pointer")
+        if T.tvm_struct_get(B_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(B_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(B_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "B", T.Cast("int64", T.tvm_struct_get(B_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_B_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[0])))
+        if T.Cast("int32", main_B_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(B_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "B", T.int64(0), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(B_handle, 0, 9, "int32") != T.tvm_struct_get(A_handle, 0, 9, "int32"):
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 9, "int32")))
+        if T.tvm_struct_get(B_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "B", T.int64(1), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 10, "int32")))
+        if T.isnullptr(B):
+            T.call_packed("__tvm_error_null_ptr", "main", "B", "data pointer")
+        if T.tvm_struct_get(C_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(C_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(C_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "C", T.Cast("int64", T.tvm_struct_get(C_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_C_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[0])))
+        if T.Cast("int32", main_C_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(C_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "C", T.int64(0), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(C_handle, 0, 9, "int32") != T.tvm_struct_get(A_handle, 0, 9, "int32"):
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 9, "int32")))
+        if T.tvm_struct_get(C_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "C", T.int64(1), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 10, "int32")))
+        if T.isnullptr(C):
+            T.call_packed("__tvm_error_null_ptr", "main", "C", "data pointer")
+        A_1 = T.decl_buffer((1024, 1024), data=A, strides=(1024, 1))
+        B_1 = T.decl_buffer((1024, 1024), data=B, strides=(1024, 1))
+        C_1 = T.decl_buffer((1024, 1024), data=C, strides=(1024, 1))
+        with T.attr(0, "compute_scope", "main_compute_"):
+            kernel_error_code: T.int32 = Module.main_kernel(A, B, C)
+            assert kernel_error_code == 0, "Error executing compute kernel"
+            T.evaluate(0)
+        return 0
+================================================================================
+
+
+================================================================================
+After LowerDeviceKernelLaunch:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "thread_extent": {"blockIdx.x": 32}, "tir.is_global_func": T.bool(True), "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(self_handle: T.handle, args: T.handle, num_args: T.int32, result: T.handle("void", "global")) -> T.int32:
+        T.func_attr({"calling_conv": 1, "target": T.target({"keys": ["cpu"], "kind": "c", "tag": ""}), "thread_extent": {}, "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        assert num_args == 3, "main: num_args should be 3"
+        assert not T.isnullptr(args), "main: args pointer is NULL"
+        A_handle_type_index: T.int32 = T.tvm_struct_get(args, 0, 13, "int32")
+        assert A_handle_type_index == 0 or A_handle_type_index == 4 or A_handle_type_index == 7 or 64 <= A_handle_type_index, "kernel main input A expected pointer or tensor handle"
+        B_handle_type_index: T.int32 = T.tvm_struct_get(args, 1, 13, "int32")
+        assert B_handle_type_index == 0 or B_handle_type_index == 4 or B_handle_type_index == 7 or 64 <= B_handle_type_index, "kernel main input B expected pointer or tensor handle"
+        C_handle_type_index: T.int32 = T.tvm_struct_get(args, 2, 13, "int32")
+        assert C_handle_type_index == 0 or C_handle_type_index == 4 or C_handle_type_index == 7 or 64 <= C_handle_type_index, "kernel main input C expected pointer or tensor handle"
+        A_handle: T.handle = T.Select(A_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 0, 15, "handle"), 24), T.tvm_struct_get(args, 0, 15, "handle"))
+        B_handle: T.handle = T.Select(B_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 1, 15, "handle"), 24), T.tvm_struct_get(args, 1, 15, "handle"))
+        C_handle: T.handle = T.Select(C_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 2, 15, "handle"), 24), T.tvm_struct_get(args, 2, 15, "handle"))
+        main_A_is_null: T.bool = T.isnullptr(A_handle)
+        assert not main_A_is_null, "main.A is expected to have non-NULL pointer"
+        main_B_is_null: T.bool = T.isnullptr(B_handle)
+        assert not main_B_is_null, "main.B is expected to have non-NULL pointer"
+        main_C_is_null: T.bool = T.isnullptr(C_handle)
+        assert not main_C_is_null, "main.C is expected to have non-NULL pointer"
+        main_A_shape: T.handle("int64", "global") = T.tvm_struct_get(A_handle, 0, 2, "handle")
+        main_A_shape_1 = T.decl_buffer((2,), "int64", data=main_A_shape)
+        main_B_shape: T.handle("int64", "global") = T.tvm_struct_get(B_handle, 0, 2, "handle")
+        main_B_shape_1 = T.decl_buffer((2,), "int64", data=main_B_shape)
+        main_C_shape: T.handle("int64", "global") = T.tvm_struct_get(C_handle, 0, 2, "handle")
+        main_C_shape_1 = T.decl_buffer((2,), "int64", data=main_C_shape)
+        if T.tvm_struct_get(A_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "A", T.int64(2), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 4, "int32")))
+        main_A_strides: T.handle("int64", "global") = T.tvm_struct_get(A_handle, 0, 3, "handle")
+        main_A_strides_1 = T.decl_buffer((2,), "int64", data=main_A_strides)
+        dev_id: T.int32 = T.tvm_struct_get(A_handle, 0, 9, "int32")
+        A: T.handle("float32", "global") = T.tvm_struct_get(A_handle, 0, 1, "handle")
+        T.attr(A, "storage_alignment", 64)
+        if T.tvm_struct_get(B_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "B", T.int64(2), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 4, "int32")))
+        main_B_strides: T.handle("int64", "global") = T.tvm_struct_get(B_handle, 0, 3, "handle")
+        main_B_strides_1 = T.decl_buffer((2,), "int64", data=main_B_strides)
+        B: T.handle("float32", "global") = T.tvm_struct_get(B_handle, 0, 1, "handle")
+        T.attr(B, "storage_alignment", 64)
+        if T.tvm_struct_get(C_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "C", T.int64(2), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 4, "int32")))
+        main_C_strides: T.handle("int64", "global") = T.tvm_struct_get(C_handle, 0, 3, "handle")
+        main_C_strides_1 = T.decl_buffer((2,), "int64", data=main_C_strides)
+        C: T.handle("float32", "global") = T.tvm_struct_get(C_handle, 0, 1, "handle")
+        T.attr(C, "storage_alignment", 64)
+        T.attr("default", "device_id", dev_id)
+        T.attr("default", "device_type", 1)
+        if T.tvm_struct_get(A_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(A_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(A_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "A", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_A_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[0])))
+        if T.Cast("int32", main_A_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(A_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "A", T.int64(0), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(A_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "A", T.int64(1), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 10, "int32")))
+        if T.isnullptr(A):
+            T.call_packed("__tvm_error_null_ptr", "main", "A", "data pointer")
+        if T.tvm_struct_get(B_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(B_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(B_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "B", T.Cast("int64", T.tvm_struct_get(B_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_B_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[0])))
+        if T.Cast("int32", main_B_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(B_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "B", T.int64(0), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(B_handle, 0, 9, "int32") != T.tvm_struct_get(A_handle, 0, 9, "int32"):
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 9, "int32")))
+        if T.tvm_struct_get(B_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "B", T.int64(1), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 10, "int32")))
+        if T.isnullptr(B):
+            T.call_packed("__tvm_error_null_ptr", "main", "B", "data pointer")
+        if T.tvm_struct_get(C_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(C_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(C_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "C", T.Cast("int64", T.tvm_struct_get(C_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_C_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[0])))
+        if T.Cast("int32", main_C_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(C_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "C", T.int64(0), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(C_handle, 0, 9, "int32") != T.tvm_struct_get(A_handle, 0, 9, "int32"):
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 9, "int32")))
+        if T.tvm_struct_get(C_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "C", T.int64(1), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 10, "int32")))
+        if T.isnullptr(C):
+            T.call_packed("__tvm_error_null_ptr", "main", "C", "data pointer")
+        A_1 = T.decl_buffer((1024, 1024), data=A, strides=(1024, 1))
+        B_1 = T.decl_buffer((1024, 1024), data=B, strides=(1024, 1))
+        C_1 = T.decl_buffer((1024, 1024), data=C, strides=(1024, 1))
+        with T.attr(0, "compute_scope", "main_compute_"):
+            kernel_error_code: T.int32 = T.call_extern("int32", "main_kernel", A, B, C)
+            assert kernel_error_code == 0, "Error executing compute kernel"
+            T.evaluate(0)
+        return 0
+================================================================================
+
+
+================================================================================
+After PersistThreadblock:
+================================================================================
+# from tvm.script import ir as I
+# from tvm.script import tir as T
+
+@I.ir_module
+class Module:
+    @T.prim_func
+    def main_kernel(A: T.handle("float32", "global"), B: T.handle("float32", "global"), C: T.handle("float32", "global")) -> T.int32:
+        T.func_attr({"target": T.target({"keys": ["dlc"], "kind": "llvm", "mtriple": "", "tag": ""}), "thread_extent": {"blockIdx.x": 32}, "tir.is_global_func": T.bool(True), "tir.noalias": True, "tl.non_restrict_params": [], "tl.readonly_param_indices": [0, 1]})
+        c_local = T.handle("float32", "local")
+        c_local_1 = T.decl_buffer((32768,), data=c_local, scope="local")
+        C_1 = T.decl_buffer((1048576,), data=C)
+        B_1 = T.decl_buffer((1048576,), data=B)
+        b_local = T.handle("float32", "local")
+        b_local_1 = T.decl_buffer((32768,), data=b_local, scope="local")
+        A_1 = T.decl_buffer((1048576,), data=A)
+        a_local = T.handle("float32", "local")
+        a_local_1 = T.decl_buffer((32768,), data=a_local, scope="local")
+        with T.launch_thread("blockIdx.x", 32) as bx:
+            a_local = T.allocate([32768], "float32", "local")
+            b_local = T.allocate([32768], "float32", "local")
+            c_local = T.allocate([32768], "float32", "local")
+            for i_j_fused in T.parallel(8192):
+                a_local_2 = T.Buffer((32768,), data=a_local, scope="local")
+                A_2 = T.Buffer((1048576,), data=A)
+                a_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = A_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            for i_j_fused in T.parallel(8192):
+                b_local_2 = T.Buffer((32768,), data=b_local, scope="local")
+                B_2 = T.Buffer((1048576,), data=B)
+                b_local_2[i_j_fused * 4:i_j_fused * 4 + 4] = B_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4]
+            T.dlc_add("DLCAdd<float>", T.tvm_access_ptr(T.type_annotation("float32"), c_local, 0, 32768, 2), T.tvm_access_ptr(T.type_annotation("float32"), a_local, 0, 32768, 1), T.tvm_access_ptr(T.type_annotation("float32"), b_local, 0, 32768, 1), 32768)
+            for i_j_fused in T.parallel(8192):
+                C_2 = T.Buffer((1048576,), data=C)
+                c_local_2 = T.Buffer((32768,), data=c_local, scope="local")
+                C_2[bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4:bx // 4 * 131072 + i_j_fused // 64 * 1024 + bx % 4 * 256 + i_j_fused % 64 * 4 + 4] = c_local_2[i_j_fused * 4:i_j_fused * 4 + 4]
+        return 0
+
+    @T.prim_func
+    def main(self_handle: T.handle, args: T.handle, num_args: T.int32, result: T.handle("void", "global")) -> T.int32:
+        T.func_attr({"calling_conv": 1, "target": T.target({"keys": ["cpu"], "kind": "c", "tag": ""}), "thread_extent": {}, "tir.is_entry_func": True, "tl.readonly_param_indices": [0, 1, 2]})
+        assert num_args == 3, "main: num_args should be 3"
+        assert not T.isnullptr(args), "main: args pointer is NULL"
+        A_handle_type_index: T.int32 = T.tvm_struct_get(args, 0, 13, "int32")
+        assert A_handle_type_index == 0 or A_handle_type_index == 4 or A_handle_type_index == 7 or 64 <= A_handle_type_index, "kernel main input A expected pointer or tensor handle"
+        B_handle_type_index: T.int32 = T.tvm_struct_get(args, 1, 13, "int32")
+        assert B_handle_type_index == 0 or B_handle_type_index == 4 or B_handle_type_index == 7 or 64 <= B_handle_type_index, "kernel main input B expected pointer or tensor handle"
+        C_handle_type_index: T.int32 = T.tvm_struct_get(args, 2, 13, "int32")
+        assert C_handle_type_index == 0 or C_handle_type_index == 4 or C_handle_type_index == 7 or 64 <= C_handle_type_index, "kernel main input C expected pointer or tensor handle"
+        A_handle: T.handle = T.Select(A_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 0, 15, "handle"), 24), T.tvm_struct_get(args, 0, 15, "handle"))
+        B_handle: T.handle = T.Select(B_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 1, 15, "handle"), 24), T.tvm_struct_get(args, 1, 15, "handle"))
+        C_handle: T.handle = T.Select(C_handle_type_index == 70, T.handle_add_byte_offset(T.tvm_struct_get(args, 2, 15, "handle"), 24), T.tvm_struct_get(args, 2, 15, "handle"))
+        main_A_is_null: T.bool = T.isnullptr(A_handle)
+        assert not main_A_is_null, "main.A is expected to have non-NULL pointer"
+        main_B_is_null: T.bool = T.isnullptr(B_handle)
+        assert not main_B_is_null, "main.B is expected to have non-NULL pointer"
+        main_C_is_null: T.bool = T.isnullptr(C_handle)
+        assert not main_C_is_null, "main.C is expected to have non-NULL pointer"
+        main_A_shape: T.handle("int64", "global") = T.tvm_struct_get(A_handle, 0, 2, "handle")
+        main_A_shape_1 = T.decl_buffer((2,), "int64", data=main_A_shape)
+        main_B_shape: T.handle("int64", "global") = T.tvm_struct_get(B_handle, 0, 2, "handle")
+        main_B_shape_1 = T.decl_buffer((2,), "int64", data=main_B_shape)
+        main_C_shape: T.handle("int64", "global") = T.tvm_struct_get(C_handle, 0, 2, "handle")
+        main_C_shape_1 = T.decl_buffer((2,), "int64", data=main_C_shape)
+        if T.tvm_struct_get(A_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "A", T.int64(2), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 4, "int32")))
+        main_A_strides: T.handle("int64", "global") = T.tvm_struct_get(A_handle, 0, 3, "handle")
+        main_A_strides_1 = T.decl_buffer((2,), "int64", data=main_A_strides)
+        dev_id: T.int32 = T.tvm_struct_get(A_handle, 0, 9, "int32")
+        A: T.handle("float32", "global") = T.tvm_struct_get(A_handle, 0, 1, "handle")
+        T.attr(A, "storage_alignment", 64)
+        if T.tvm_struct_get(B_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "B", T.int64(2), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 4, "int32")))
+        main_B_strides: T.handle("int64", "global") = T.tvm_struct_get(B_handle, 0, 3, "handle")
+        main_B_strides_1 = T.decl_buffer((2,), "int64", data=main_B_strides)
+        B: T.handle("float32", "global") = T.tvm_struct_get(B_handle, 0, 1, "handle")
+        T.attr(B, "storage_alignment", 64)
+        if T.tvm_struct_get(C_handle, 0, 4, "int32") != 2:
+            T.call_packed("__tvm_error_ndim_mismatch", "main", "C", T.int64(2), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 4, "int32")))
+        main_C_strides: T.handle("int64", "global") = T.tvm_struct_get(C_handle, 0, 3, "handle")
+        main_C_strides_1 = T.decl_buffer((2,), "int64", data=main_C_strides)
+        C: T.handle("float32", "global") = T.tvm_struct_get(C_handle, 0, 1, "handle")
+        T.attr(C, "storage_alignment", 64)
+        T.attr("default", "device_id", dev_id)
+        T.attr("default", "device_type", 1)
+        if T.tvm_struct_get(A_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(A_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(A_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "A", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_A_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[0])))
+        if T.Cast("int32", main_A_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_A_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "A", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_A_strides), 1, T.Cast("int32", main_A_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(A_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "A", T.int64(0), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(A_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "A", T.int64(1), T.Cast("int64", T.tvm_struct_get(A_handle, 0, 10, "int32")))
+        if T.isnullptr(A):
+            T.call_packed("__tvm_error_null_ptr", "main", "A", "data pointer")
+        if T.tvm_struct_get(B_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(B_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(B_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "B", T.Cast("int64", T.tvm_struct_get(B_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_B_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[0])))
+        if T.Cast("int32", main_B_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_B_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_B_strides), 1, T.Cast("int32", main_B_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(B_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "B", T.int64(0), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(B_handle, 0, 9, "int32") != T.tvm_struct_get(A_handle, 0, 9, "int32"):
+            T.call_packed("__tvm_error_expect_eq", "main", "B", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 9, "int32")))
+        if T.tvm_struct_get(B_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "B", T.int64(1), T.Cast("int64", T.tvm_struct_get(B_handle, 0, 10, "int32")))
+        if T.isnullptr(B):
+            T.call_packed("__tvm_error_null_ptr", "main", "B", "data pointer")
+        if T.tvm_struct_get(C_handle, 0, 5, "uint8") != T.uint8(2) or T.tvm_struct_get(C_handle, 0, 6, "uint8") != T.uint8(32) or T.tvm_struct_get(C_handle, 0, 7, "uint16") != T.uint16(1):
+            T.call_packed("__tvm_error_dtype_mismatch", "main", "C", T.Cast("int64", T.tvm_struct_get(C_handle, 0, 5, "uint8")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 6, "uint8")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 7, "uint16")), T.int64(2), T.int64(32), T.int64(1))
+        if T.Cast("int32", main_C_shape_1[0]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[0]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[0])))
+        if T.Cast("int32", main_C_shape_1[1]) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "shape[1]", T.int64(1024), T.Cast("int64", T.Cast("int32", main_C_shape_1[1])))
+        if T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1])) != 1:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[1]", T.int64(1), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[1]))))
+        if T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0])) != 1024:
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "strides[0]", T.int64(1024), T.Cast("int64", T.if_then_else(T.isnullptr(main_C_strides), 1, T.Cast("int32", main_C_strides_1[0]))))
+        if T.uint64(0) != T.tvm_struct_get(C_handle, 0, 8, "uint64"):
+            T.call_packed("__tvm_error_byte_offset_mismatch", "main", "C", T.int64(0), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 8, "uint64")))
+        if T.tvm_struct_get(C_handle, 0, 9, "int32") != T.tvm_struct_get(A_handle, 0, 9, "int32"):
+            T.call_packed("__tvm_error_expect_eq", "main", "C", "device_id", T.Cast("int64", T.tvm_struct_get(A_handle, 0, 9, "int32")), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 9, "int32")))
+        if T.tvm_struct_get(C_handle, 0, 10, "int32") != 1:
+            T.call_packed("__tvm_error_device_type_mismatch", "main", "C", T.int64(1), T.Cast("int64", T.tvm_struct_get(C_handle, 0, 10, "int32")))
+        if T.isnullptr(C):
+            T.call_packed("__tvm_error_null_ptr", "main", "C", "data pointer")
+        A_1 = T.decl_buffer((1024, 1024), data=A, strides=(1024, 1))
+        B_1 = T.decl_buffer((1024, 1024), data=B, strides=(1024, 1))
+        C_1 = T.decl_buffer((1024, 1024), data=C, strides=(1024, 1))
+        with T.attr(0, "compute_scope", "main_compute_"):
+            kernel_error_code: T.int32 = T.call_extern("int32", "main_kernel", A, B, C)
+            assert kernel_error_code == 0, "Error executing compute kernel"
+            T.evaluate(0)
+        return 0
+================================================================================
+
+Traceback (most recent call last):
+  File "/home/test/lanhu/tilelang-dlc/examples/dlc/elementwise_add_dlc.py", line 76, in <module>
+    func = vec_add_dlc(M, N, 128, 256)
+  File "/home/test/lanhu/tilelang-dlc/tilelang/jit/__init__.py", line 440, in __call__
+    kernel = self.compile(*args, **kwargs)
+  File "/home/test/lanhu/tilelang-dlc/tilelang/jit/__init__.py", line 375, in compile
+    kernel_result = compile(
+  File "/home/test/lanhu/tilelang-dlc/tilelang/jit/__init__.py", line 98, in compile
+    return cached(
+  File "/home/test/lanhu/tilelang-dlc/tilelang/cache/__init__.py", line 74, in cached
+    return _dispatch_map[execution_backend].cached(
+  File "/home/test/lanhu/tilelang-dlc/tilelang/cache/kernel_cache.py", line 226, in cached
+    kernel = JITKernel(
+  File "/home/test/lanhu/tilelang-dlc/tilelang/jit/kernel.py", line 137, in __init__
+    adapter = self._compile_and_create_adapter(func, out_idx)
+  File "/home/test/lanhu/tilelang-dlc/tilelang/jit/kernel.py", line 242, in _compile_and_create_adapter
+    artifact = tilelang.lower(
+  File "/home/test/lanhu/tilelang-dlc/tilelang/engine/lower.py", line 271, in lower
+    codegen_mod = device_codegen(device_mod, target) if enable_device_compile else device_codegen_without_compile(device_mod, target)
+  File "/home/test/lanhu/tilelang-dlc/tilelang/engine/lower.py", line 206, in device_codegen_without_compile
+    device_mod = tvm.ffi.get_global_func("target.build.tilelang_dlc")(device_mod, target)
+  File "python/tvm_ffi/cython/function.pxi", line 923, in tvm_ffi.core.Function.__call__
+  File "<unknown>", line 0, in tvm::codegen::BuildTileLangDLC(tvm::IRModule, tvm::Target)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenTileLangDLC::AddFunction(tvm::GlobalVar const&, tvm::tir::PrimFunc const&)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::PrintStmt(tvm::tir::Stmt const&)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::VisitStmt_(tvm::tir::SeqStmtNode const*)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenTileLangDLC::VisitStmt_(tvm::tir::AttrStmtNode const*)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::PrintStmt(tvm::tir::Stmt const&)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::VisitStmt_(tvm::tir::AllocateNode const*)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::VisitStmt_(tvm::tir::AllocateNode const*)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::VisitStmt_(tvm::tir::AllocateNode const*)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::VisitStmt_(tvm::tir::SeqStmtNode const*)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::VisitStmt_(tvm::tir::EvaluateNode const*)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::PrintExpr[abi:cxx11](tvm::PrimExpr const&)
+  File "<unknown>", line 0, in tvm::codegen::CodeGenC::VisitExpr_(tvm::tir::CallNode const*, std::ostream&)
+  File "<unknown>", line 0, in tvm::runtime::detail::LogFatal::~LogFatal() [clone .constprop.0]
+  File "<unknown>", line 0, in tvm::runtime::detail::LogFatal::Entry::Finalize()
+tvm.error.InternalError: Unresolved call Op(tl.dlc_add)
