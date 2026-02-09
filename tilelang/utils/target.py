@@ -12,7 +12,7 @@ from tvm.contrib import rocm
 from tilelang.contrib import nvcc
 
 SUPPORTED_TARGETS: dict[str, str] = {
-    "auto": "Auto-detect CUDA/HIP/Metal based on availability.",
+    "auto": "Auto-detect CUDA/HIP/Metal/DLC based on availability.",
     "cuda": "CUDA GPU target (supports options such as `cuda -arch=sm_80`).",
     "hip": "ROCm HIP target (supports options like `hip -mcpu=gfx90a`).",
     "metal": "Apple Metal target for arm64 Macs.",
@@ -20,6 +20,7 @@ SUPPORTED_TARGETS: dict[str, str] = {
     "webgpu": "WebGPU target for browser/WebGPU runtimes.",
     "c": "C source backend.",
     "cutedsl": "CuTe DSL GPU target.",
+    "dlc": "DLC accelerator target; emits C source for DLC toolchain.",
 }
 
 
@@ -95,6 +96,37 @@ def determine_torch_fp8_type(fp8_format: Literal["e4m3", "e5m2"] = "e4m3") -> to
     return torch_dtype
 
 
+def check_dlc_availability() -> bool:
+    """
+    Check if the DLC toolchain is available.
+    Returns True when DLC_TOOLCHAIN env var is set or DLC LLVM path is configured.
+    Allows source-only generation when explicit target='dlc' is used even if False.
+    """
+    import os
+    
+    if os.environ.get("DLC_TOOLCHAIN", "").strip() in ("1", "ON", "YES", "true"):
+        return True
+    if os.environ.get("LLVM_PATH", "").strip():
+        return True
+    if os.environ.get("DLC_LLVM_PATH", "").strip():
+        return True
+    return False
+
+
+def target_is_dlc(target: Target) -> bool:
+    """
+    Return True if the target is DLC (llvm with keys=dlc or kind=dlc).
+    """
+    if getattr(target, "kind", None) is None:
+        return False
+    if target.kind.name == "dlc":
+        return True
+    keys = getattr(target, "keys", None)
+    if target.kind.name == "llvm" and keys and "dlc" in keys:
+        return True
+    return False
+
+
 def normalize_cutedsl_target(target: str | Target) -> Target | None:
     if isinstance(target, Target):
         if target.kind.name == "cuda" and "cutedsl" in target.keys:
@@ -119,18 +151,18 @@ def normalize_cutedsl_target(target: str | Target) -> Target | None:
 
 def determine_target(target: str | Target | Literal["auto"] = "auto", return_object: bool = False) -> str | Target:
     """
-    Determine the appropriate target for compilation (CUDA, HIP, or manual selection).
+    Determine the appropriate target for compilation (CUDA, HIP, Metal, DLC, or manual selection).
 
     Args:
         target (Union[str, Target, Literal["auto"]]): User-specified target.
-            - If "auto", the system will automatically detect whether CUDA or HIP is available.
+            - If "auto", the system will automatically detect available backends.
             - If a string or Target, it is directly validated.
 
     Returns:
-        Union[str, Target]: The selected target ("cuda", "hip", or a valid Target object).
+        Union[str, Target]: The selected target ("cuda", "hip", "metal", "dlc", or a valid Target object).
 
     Raises:
-        ValueError: If no CUDA or HIP is available and the target is "auto".
+        ValueError: If no backend is available and the target is "auto".
         AssertionError: If the target is invalid.
     """
 
@@ -154,12 +186,16 @@ def determine_target(target: str | Target | Literal["auto"] = "auto", return_obj
             return_var = "hip"
         elif check_metal_availability():
             return_var = "metal"
+        elif check_dlc_availability():
+            return_var = "llvm --keys=dlc"
         else:
-            raise ValueError("No CUDA or HIP or MPS available on this system.")
+            raise ValueError("No CUDA, HIP, Metal, or DLC available on this system.")
 
     else:
-        possible_cutedsl_target = normalize_cutedsl_target(target)
-        if possible_cutedsl_target is not None:
+        # Handle explicit DLC target
+        if isinstance(target, str) and target.strip().lower() == "dlc":
+            return_var = "llvm --keys=dlc"
+        elif possible_cutedsl_target := normalize_cutedsl_target(target):
             try:
                 from tilelang.jit.adapter.cutedsl.checks import check_cutedsl_available  # lazy
 

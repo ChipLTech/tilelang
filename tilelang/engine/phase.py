@@ -4,6 +4,19 @@ from tvm.target import Target
 import tilelang
 from tilelang.transform import PassContext
 from tilelang.contrib.nvcc import have_tma, is_hopper, have_pdl
+import os
+
+# Debug flag for printing IR after each pass
+_DEBUG_PRINT_PASSES = os.environ.get("TL_DEBUG_PRINT_PASSES", "0") == "1"
+
+def _debug_print_pass(pass_name: str, mod: IRModule) -> None:
+    """Print IR after a pass if debug mode is enabled."""
+    if _DEBUG_PRINT_PASSES:
+        print(f"\n{'='*80}")
+        print(f"After {pass_name}:")
+        print(f"{'='*80}")
+        print(mod)
+        print(f"{'='*80}\n")
 
 
 def allow_warp_specialized(pass_ctx: PassContext | None = None, target: Target | None = None) -> bool:
@@ -156,46 +169,63 @@ def LowerAndLegalize(mod: IRModule, target: Target) -> IRModule:
     Returns:
         IRModule: The transformed module, ready for target-specific optimization passes.
     """
+    _debug_print_pass("Before BindTarget", mod)
     mod = tir.transform.BindTarget(target)(mod)
+    _debug_print_pass("BindTarget", mod)
 
     if should_force_let_inline():
         # Force-let inline whenever the pass config requests it.
         mod = tilelang.transform.LetInline()(mod)
+        _debug_print_pass("LetInline", mod)
     # Add wrapper for single buf store
     mod = tilelang.transform.AddWrapperForSingleBufStore()(mod)
+    _debug_print_pass("AddWrapperForSingleBufStore", mod)
     # Normalize negative indices to canonical non-negative form
     mod = tilelang.transform.LegalizeNegativeIndex()(mod)
+    _debug_print_pass("LegalizeNegativeIndex", mod)
     # Verify parallel loop correctness
     if should_enable_race_check():
         mod = tilelang.transform.VerifyParallelLoop()(mod)
+        _debug_print_pass("VerifyParallelLoop", mod)
     # Inject assumes to speedup tvm prover
     mod = tilelang.transform.InjectAssumes()(mod)
+    _debug_print_pass("InjectAssumes", mod)
     # Simplify the IR expressions
     mod = tilelang.transform.Simplify()(mod)
+    _debug_print_pass("Simplify (1st)", mod)
     # Set layouts for reducers
     mod = tilelang.transform.LayoutReducer()(mod)
+    _debug_print_pass("LayoutReducer", mod)
     # Infer memory layouts for fragments and shared memory
     mod = tilelang.transform.LayoutInference()(mod)
+    _debug_print_pass("LayoutInference", mod)
     # Visualize the layout
     LayoutVisual(mod)
     # Lower high-level tile operations to low-level operations
     mod = tilelang.transform.LowerTileOp()(mod)
+    _debug_print_pass("LowerTileOp", mod)
     # Lower l2 persistent map
     mod = tilelang.transform.LowerL2Persistent()(mod)
+    _debug_print_pass("LowerL2Persistent", mod)
     # Decouple type cast vectorization constraints before vectorization
     mod = tilelang.transform.DecoupleTypeCast()(mod)
+    _debug_print_pass("DecoupleTypeCast", mod)
     # Legalize vectorized loops to ensure they are valid
     mod = tilelang.transform.LegalizeVectorizedLoop()(mod)
+    _debug_print_pass("LegalizeVectorizedLoop", mod)
     # Add safety checks for memory accesses
     mod = tilelang.transform.LegalizeSafeMemoryAccess()(mod)
+    _debug_print_pass("LegalizeSafeMemoryAccess", mod)
     # Simplify again to clean up any duplicated conditions
     # that may have been introduced by safety checks
     # use an enhanced pass to simplify the dynamic symbolics
     # TODO(lei): return to tir pass when kSymbolicBound simplification
     # is merged into tvm.
     mod = tilelang.transform.Simplify()(mod)
+    _debug_print_pass("Simplify (2nd)", mod)
     # Hoist any root-block annotations to PrimFunc attrs if pass is available
     mod = tilelang.transform.HoistNonRestrictParams()(mod)
+    _debug_print_pass("HoistNonRestrictParams", mod)
     return mod
 
 
@@ -203,48 +233,78 @@ def OptimizeForTarget(mod: IRModule, target: Target) -> IRModule:
     pass_ctx = tilelang.transform.get_pass_context()
     # Lower the shared.barrier into specific initialization slot
     mod = tilelang.transform.LowerSharedBarrier()(mod)
+    _debug_print_pass("LowerSharedBarrier", mod)
     # Lower the shared.tmem into specific initialization slot
     mod = tilelang.transform.LowerSharedTmem()(mod)
+    _debug_print_pass("LowerSharedTmem", mod)
     # which may be introduced by the LegalizeSafeMemoryAccess
     if allow_tma_and_warp_specialized(pass_ctx=pass_ctx, target=target):
         mod = tilelang.transform.IfStmtBinding()(mod)
+        _debug_print_pass("IfStmtBinding (TMA path)", mod)
         mod = tilelang.transform.MultiVersionBuffer()(mod)
+        _debug_print_pass("MultiVersionBuffer", mod)
         mod = tilelang.transform.WarpSpecialized()(mod)
+        _debug_print_pass("WarpSpecialized", mod)
         mod = tilelang.transform.InjectTmaBarrier()(mod)
+        _debug_print_pass("InjectTmaBarrier", mod)
         # if tma is not enabled, we can also do pipeline planning
         # to get better performance with async copy
         mod = tilelang.transform.PipelinePlanning()(mod)
+        _debug_print_pass("PipelinePlanning (TMA path)", mod)
         mod = tilelang.transform.InjectSoftwarePipeline()(mod)
+        _debug_print_pass("InjectSoftwarePipeline (TMA path)", mod)
         # warp_specialized pass will pack the if stmt into the block
         # so we need to lower the opaque block first
         mod = tilelang.transform.LowerOpaqueBlock()(mod)
+        _debug_print_pass("LowerOpaqueBlock (TMA path)", mod)
         if is_hopper(target):
             mod = tilelang.transform.RewriteWgmmaSync()(mod)
+            _debug_print_pass("RewriteWgmmaSync", mod)
     else:
         mod = tilelang.transform.IfStmtBinding()(mod)
+        _debug_print_pass("IfStmtBinding (non-TMA path)", mod)
         mod = tilelang.transform.PlanAndUpdateBufferAllocationLocation()(mod)
+        _debug_print_pass("PlanAndUpdateBufferAllocationLocation", mod)
         mod = tilelang.transform.PipelinePlanning()(mod)
+        _debug_print_pass("PipelinePlanning (non-TMA path)", mod)
         mod = tilelang.transform.InjectSoftwarePipeline()(mod)
+        _debug_print_pass("InjectSoftwarePipeline (non-TMA path)", mod)
 
     mod = tilelang.transform.LowerOpaqueBlock()(mod)
+    _debug_print_pass("LowerOpaqueBlock (final)", mod)
     mod = tilelang.transform.Simplify()(mod)
+    _debug_print_pass("Simplify (OptimizeForTarget 1st)", mod)
     mod = tir.transform.NarrowDataType(32)(mod)
+    _debug_print_pass("NarrowDataType", mod)
     mod = tilelang.transform.FlattenBuffer()(mod)
+    _debug_print_pass("FlattenBuffer", mod)
     # ConfigIndexBitwidth must be applied after FlattenBuffer
     # as it will flatten index computing
     mod = tilelang.transform.ConfigIndexBitwidth()(mod)
+    _debug_print_pass("ConfigIndexBitwidth", mod)
     mod = tir.transform.Simplify()(mod)
+    _debug_print_pass("Simplify (OptimizeForTarget 2nd)", mod)
     mod = tilelang.transform.VectorizeLoop(enable_vectorize=allow_vectorize(pass_ctx=pass_ctx))(mod)
+    _debug_print_pass("VectorizeLoop", mod)
     mod = tilelang.transform.StorageRewrite()(mod)
+    _debug_print_pass("StorageRewrite", mod)
     mod = tilelang.transform.LoopUnswitching()(mod)
+    _debug_print_pass("LoopUnswitching", mod)
     mod = tilelang.transform.UnrollLoop()(mod)
+    _debug_print_pass("UnrollLoop", mod)
     mod = tir.transform.RenormalizeSplitPattern()(mod)
+    _debug_print_pass("RenormalizeSplitPattern", mod)
     mod = tir.transform.Simplify()(mod)
+    _debug_print_pass("Simplify (OptimizeForTarget 3rd)", mod)
     mod = tir.transform.RemoveNoOp()(mod)
+    _debug_print_pass("RemoveNoOp", mod)
     mod = tir.transform.HoistIfThenElse()(mod)
+    _debug_print_pass("HoistIfThenElse", mod)
 
     mod = tir.transform.VerifyMemory()(mod)
+    _debug_print_pass("VerifyMemory", mod)
     mod = tir.transform.AnnotateEntryFunc()(mod)
+    _debug_print_pass("AnnotateEntryFunc", mod)
     # TODO(lei): This is a hack to make sure the
     # thread level allreduce pass can be applied
     # in TL. As Tl only use one thread dimension
@@ -255,44 +315,65 @@ def OptimizeForTarget(mod: IRModule, target: Target) -> IRModule:
     # of putting the LowerThreadAllreduce before
     # the Legalization.
     mod = tir.transform.InferFragment()(mod)
+    _debug_print_pass("InferFragment", mod)
     mod = tilelang.transform.LowerThreadAllreduce()(mod)
+    _debug_print_pass("LowerThreadAllreduce", mod)
     mod = tilelang.transform.LowerLDGSTG()(mod)
+    _debug_print_pass("LowerLDGSTG", mod)
     mod = tilelang.transform.LowerHopperIntrin()(mod)
+    _debug_print_pass("LowerHopperIntrin", mod)
     # Global Barrier Synchronization must be applied before
     # SplitHostDevice pass, as the global barrier
     if allow_global_thread_synchronization():
         mod = tilelang.transform.ThreadSync("global")(mod)
+        _debug_print_pass("ThreadSync(global)", mod)
     mod = tilelang.transform.AnnotateDeviceRegions()(mod)
+    _debug_print_pass("AnnotateDeviceRegions", mod)
     mod = tilelang.transform.SplitHostDevice()(mod)
+    _debug_print_pass("SplitHostDevice", mod)
 
     # Mark the function contains pdl_sync or pdl_trigger
     mod = tilelang.transform.MarkCudaSyncCalls(have_pdl(target))(mod)
+    _debug_print_pass("MarkCudaSyncCalls", mod)
 
     mod = tilelang.transform.AnnotateReadOnlyParams()(mod)
+    _debug_print_pass("AnnotateReadOnlyParams", mod)
     # MergeSharedMemoryAllocations must be applied after SplitHostDevice
     # because the merged allocation site is at the beginning of each device function
     enable_aggressive_merge = should_enable_aggressive_merge(pass_ctx=pass_ctx, target=target)
     mod = tilelang.transform.MergeSharedMemoryAllocations(enable_aggressive_merge=enable_aggressive_merge)(mod)
+    _debug_print_pass("MergeSharedMemoryAllocations", mod)
     if allow_tma_and_warp_specialized(pass_ctx=pass_ctx, target=target):
         mod = tilelang.transform.InjectFenceProxy()(mod)
+        _debug_print_pass("InjectFenceProxy (TMA path)", mod)
     else:
         if allow_fence_proxy(target=target):
             # in hopper device, wgmma is an async proxy
             # so we need to inject a fence proxy before it
             mod = tilelang.transform.InjectFenceProxy()(mod)
+            _debug_print_pass("InjectFenceProxy (non-TMA path)", mod)
     mod = tilelang.transform.ThreadSync("shared")(mod)
+    _debug_print_pass("ThreadSync(shared)", mod)
     mod = tilelang.transform.ThreadSync("shared.dyn")(mod)
+    _debug_print_pass("ThreadSync(shared.dyn)", mod)
     mod = tilelang.transform.MergeIfStmt()(mod)
+    _debug_print_pass("MergeIfStmt", mod)
     # Inject PTX async copy must behind the thread sync pass
     # as ptx async copy won't be recognized as a valid buffer load
     mod = tilelang.transform.InjectPTXAsyncCopy()(mod)
+    _debug_print_pass("InjectPTXAsyncCopy", mod)
     if allow_tma_and_warp_specialized(pass_ctx=pass_ctx, target=target):
         mod = tilelang.transform.AnnotateWarpGroupRegAlloc()(mod)
+        _debug_print_pass("AnnotateWarpGroupRegAlloc", mod)
     mod = tilelang.transform.MakePackedAPI()(mod)
+    _debug_print_pass("MakePackedAPI", mod)
     mod = tilelang.transform.Simplify()(mod)
+    _debug_print_pass("Simplify (OptimizeForTarget final)", mod)
     mod = tilelang.transform.LowerDeviceKernelLaunch()(mod)
+    _debug_print_pass("LowerDeviceKernelLaunch", mod)
 
     # Transform threadblock to persistent threadblock
     mod = tilelang.transform.PersistThreadblock()(mod)
+    _debug_print_pass("PersistThreadblock", mod)
 
     return mod

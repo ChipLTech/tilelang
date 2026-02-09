@@ -112,10 +112,18 @@ class KernelLaunchFrame(TIRFrame):
         assert isinstance(last_block_frame, BlockFrame), f"Last frame must be a block frame, got {last_block_frame}"
 
         maybe_cpu = last_block_frame.annotations.get("tilelang.is_cpu_kernel_frame", False)
+        maybe_dlc = last_block_frame.annotations.get("tilelang.is_dlc_kernel_frame", False)
 
         if maybe_cpu:
             # CPU kernel frame, return a list of for frame items.
             return _normalize_bindings([frame.vars[0] for frame in self.frames[0:-1]])
+        elif maybe_dlc:
+            # DLC kernel frame with single block dimension
+            # Return only blockIdx.x (cid) - DLC doesn't use vid like Ascend
+            # frames[0] = blockIdx.x (cid)
+            # frames[1-3] = threadIdx.x/y/z
+            # frames[4] = BlockFrame
+            return _normalize_bindings([self.frames[0].iter_var.var])
         else:
             # Otherwise, return a list of iter_var.var objects (excluding the last 4 frames).
             # As 4 frames for threadIdx.x, threadIdx.y, threadIdx.z and block frame with attributes
@@ -230,6 +238,7 @@ def Kernel(
     *blocks: int | tir.PrimExpr,
     threads: int | list[int] | tuple | None = None,
     is_cpu: bool = False,
+    is_dlc: bool = False,
     prelude: str | None = None,
 ):
     """Tools to quickly construct a GPU kernel launch frame.
@@ -246,6 +255,9 @@ def Kernel(
         Whether the kernel is running on CPU.
         Thus we will not bind threadIdx.x, threadIdx.y, threadIdx.z.
         and blockIdx.x, blockIdx.y, blockIdx.z.
+    is_dlc : bool
+        Whether the kernel is running on DLC accelerator.
+        Similar to NPU, DLC kernels have specific constraints.
     prelude : str
         The import c code of the kernel,
         will be injected before the generated kernel code.
@@ -290,6 +302,12 @@ def Kernel(
         raise JITNoBuilderError("T.Kernel() can only be used inside @tilelang.jit or @T.prim_func context. No Builder is available.")
 
     attrs: dict = {}
+
+    if is_dlc:
+        # DLC kernels have specific constraints similar to NPU
+        assert len(blocks) == 1, "DLC kernel must have exactly one block dimension"
+        attrs["tilelang.is_dlc_kernel_frame"] = True
+        return _ffi_api.KernelLaunch(blocks, threads, attrs)
 
     if not is_cpu and threads is None:
         threads = 128  # default thread number

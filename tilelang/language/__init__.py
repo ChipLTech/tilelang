@@ -123,6 +123,9 @@ from .pdl import (
     pdl_sync,  # noqa: F401
 )
 
+# DLC-specific tile operations
+from . import dlc_tile as tile  # noqa: F401
+
 
 def import_source(source: str | None = None):
     # source is the source code to be imported

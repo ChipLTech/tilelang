@@ -15,7 +15,7 @@ from tilelang.env import COMPOSABLE_KERNEL_INCLUDE_DIR, CUTLASS_INCLUDE_DIR, TIL
 from tilelang.transform import PassConfigKey
 from tilelang.transform.metal import MarkHostMetalContext
 from tilelang.engine.param import KernelParam, CompiledArtifact
-from tilelang.utils.target import determine_target
+from tilelang.utils.target import determine_target, target_is_dlc
 from tilelang.engine.phase import (
     PreLowerSemanticCheck,
     LowerAndLegalize,
@@ -24,7 +24,8 @@ from tilelang.engine.phase import (
 
 
 def is_cpu_device_backend(target: Target):
-    return target.kind.name == "c"
+    # DLC also uses C as device backend (like "c" target)
+    return target.kind.name == "c" or target_is_dlc(target)
 
 
 def has_device_kernel_launch(attrs) -> bool:
@@ -37,9 +38,11 @@ def is_device_call_c_device(func: tir.PrimFunc):
     calling_conv = attrs.get("calling_conv", CallingConv.DEFAULT)
     is_cpacked = calling_conv == CallingConv.C_PACKED_FUNC
 
-    # Check if it's a C target
-    if "target" in attrs and attrs["target"].kind.name == "c" and not is_cpacked:
-        return True
+    # Check if it's a C target or DLC target
+    if "target" in attrs:
+        func_target = attrs["target"]
+        if (func_target.kind.name == "c" or target_is_dlc(func_target)) and not is_cpacked:
+            return True
 
     return has_device_kernel_launch(attrs)
 
@@ -171,7 +174,10 @@ def device_codegen(device_mod: tvm.IRModule, target: Target) -> tvm.IRModule:
     device_mod = tir.transform.Simplify()(device_mod)
     device_mod = tilelang.transform.HoistBroadcastValues()(device_mod)
 
-    if target.kind.name == "cuda":
+    # Check for DLC target first (before checking llvm kind)
+    if target_is_dlc(target):
+        device_mod = tvm.ffi.get_global_func("target.build.tilelang_dlc")(device_mod, target)
+    elif target.kind.name == "cuda":
         global_func = "target.build.tilelang_" + ("cutedsl" if "cutedsl" in target.keys else "cuda")
         device_mod = tvm.ffi.get_global_func(global_func)(device_mod, target)
     elif target.kind.name == "hip":
@@ -190,7 +196,10 @@ def device_codegen_without_compile(device_mod: tvm.IRModule, target: Target) -> 
     device_mod = tir.transform.Simplify()(device_mod)
     device_mod = tilelang.transform.HoistBroadcastValues()(device_mod)
 
-    if target.kind.name == "cuda":
+    # Check for DLC target first (before checking llvm kind)
+    if target_is_dlc(target):
+        device_mod = tvm.ffi.get_global_func("target.build.tilelang_dlc")(device_mod, target)
+    elif target.kind.name == "cuda":
         global_func = "target.build.tilelang_" + ("cutedsl" if "cutedsl" in target.keys else "cuda") + "_without_compile"
         device_mod = tvm.ffi.get_global_func(global_func)(device_mod, target)
     elif target.kind.name == "hip":
