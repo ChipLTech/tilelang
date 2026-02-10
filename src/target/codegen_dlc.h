@@ -28,6 +28,8 @@ class CodeGenTileLangDLC : public CodeGenC {
 
   void PrintFuncPrefix(std::ostream& os) final;
   void VisitStmt_(const tir::AttrStmtNode* op) final;
+  void VisitStmt_(const tir::AllocateNode* op) final;
+  void VisitExpr_(const tir::CallNode* op, std::ostream& os) final;
   void PrintStorageScope(const std::string& scope, std::ostream& os) final;
   void PrintType(DataType t, std::ostream& os) final;
 

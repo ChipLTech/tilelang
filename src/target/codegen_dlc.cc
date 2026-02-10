@@ -12,10 +12,25 @@
 #include <unordered_set>
 
 #include "../op/builtin.h"
+#include "../op/dlc.h"
 #include "../support/ffi_aliases.h"
 
 namespace tvm {
 namespace codegen {
+
+// Helper function to convert address space integer to DLC enum name
+static std::string GetDLCAddressSpaceName(int space) {
+  // enum { SMEM = 0, HBM = 1, VMEM = 2, CMEM = 3, IMEM = 4, SEMAPHORE = 5};
+  switch (space) {
+    case 0: return "SMEM";
+    case 1: return "HBM";
+    case 2: return "VMEM";
+    case 3: return "CMEM";
+    case 4: return "IMEM";
+    case 5: return "SEMAPHORE";
+    default: return std::to_string(space);
+  }
+}
 
 CodeGenTileLangDLC::CodeGenTileLangDLC() {}
 
@@ -139,6 +154,40 @@ void CodeGenTileLangDLC::VisitStmt_(const tir::AttrStmtNode* op) {
   CodeGenC::VisitStmt_(op);
 }
 
+void CodeGenTileLangDLC::VisitStmt_(const tir::AllocateNode* op) {
+  ICHECK(!is_zero(op->condition));
+  std::string vid = AllocVarID(op->buffer_var.get());
+  
+  // Determine the storage scope
+  auto it = alloc_storage_scope_.find(op->buffer_var.get());
+  std::string scope = (it != alloc_storage_scope_.end()) ? it->second : "local";
+  
+  // Determine the address space attribute based on scope
+  std::string addr_space_attr = "";
+  if (scope == "local" || scope == "vmem") {
+    addr_space_attr = " VMEM_SPACE ";
+  } else if (scope == "semaphore") {
+    addr_space_attr = " SEMAPHORE_SPACE ";
+  }
+  
+  // Check if this is a semaphore/sync flag based on variable name
+  if (vid.find("sync") != std::string::npos || vid.find("flag") != std::string::npos) {
+    addr_space_attr = " SEMAPHORE_SPACE ";
+  }
+  
+  this->PrintIndent();
+  size_t constant_size = op->ConstantAllocationSize();
+  ICHECK_GT(constant_size, 0) << "Can only handle constant size stack allocation for now";
+  
+  // Emit the type with address space attribute
+  PrintType(op->dtype, stream);
+  stream << addr_space_attr;
+  stream << vid << "[" << constant_size << "];\n";
+  
+  RegisterHandleType(op->buffer_var.get(), op->dtype);
+  this->PrintStmt(op->body);
+}
+
 void CodeGenTileLangDLC::PrintStorageScope(const std::string& scope, std::ostream& os) {
   // DLC supports different memory scopes
   if (scope == "global") {
@@ -166,6 +215,12 @@ void CodeGenTileLangDLC::PrintType(DataType t, std::ostream& os) {
     return;
   }
   
+  // Handle integer types - use 'int' instead of 'int32_t' for DLC
+  if (t.is_int() && t.bits() == 32 && lanes == 1) {
+    os << "int";
+    return;
+  }
+  
   // Handle vector types for DLC
   if (lanes > 1) {
     // DLC uses vector types like float4, int8_128, etc.
@@ -177,6 +232,122 @@ void CodeGenTileLangDLC::PrintType(DataType t, std::ostream& os) {
   
   // For scalar types, use parent implementation
   CodeGenC::PrintType(t, os);
+}
+
+void CodeGenTileLangDLC::VisitExpr_(const tir::CallNode* op, std::ostream& os) {
+  // Handle DLC-specific operations
+  if (op->op.same_as(tl::dlc_dma())) {
+    // DLC DMA operation: dlc_dma(src_ptr, src_space, dst_ptr, dst_space, size, src_stride, dst_stride, src_flag, dst_flag)
+    // Maps to: dlc_dma_new(src_ptr, src_space, dst_ptr, dst_space, length, src_stride, dst_stride, sync_flag0, sync_flag1, unit_len, addr_unit_shift)
+    ICHECK_EQ(op->args.size(), 9U);
+    os << "dlc_dma_new(";
+    PrintExpr(op->args[0], os);  // src_ptr
+    os << ", ";
+    // Convert src_space integer to enum name
+    if (auto* src_space_int = op->args[1].as<tir::IntImmNode>()) {
+      os << GetDLCAddressSpaceName(src_space_int->value);
+    } else {
+      PrintExpr(op->args[1], os);
+    }
+    os << ", ";
+    PrintExpr(op->args[2], os);  // dst_ptr
+    os << ", ";
+    // Convert dst_space integer to enum name
+    if (auto* dst_space_int = op->args[3].as<tir::IntImmNode>()) {
+      os << GetDLCAddressSpaceName(dst_space_int->value);
+    } else {
+      PrintExpr(op->args[3], os);
+    }
+    os << ", ";
+    PrintExpr(op->args[4], os);  // size/length
+    os << ", ";
+    PrintExpr(op->args[5], os);  // src_stride
+    os << ", ";
+    PrintExpr(op->args[6], os);  // dst_stride
+    os << ", ";
+    // sync_flag0 (src_flag) - emit NULL_SEMAPHORE if zero
+    if (auto* flag0_int = op->args[7].as<tir::IntImmNode>()) {
+      if (flag0_int->value == 0) {
+        os << "NULL_SEMAPHORE";
+      } else {
+        PrintExpr(op->args[7], os);
+      }
+    } else {
+      PrintExpr(op->args[7], os);
+    }
+    os << ", ";
+    // sync_flag1 (dst_flag) - emit NULL_SEMAPHORE if zero
+    if (auto* flag1_int = op->args[8].as<tir::IntImmNode>()) {
+      if (flag1_int->value == 0) {
+        os << "NULL_SEMAPHORE";
+      } else {
+        PrintExpr(op->args[8], os);
+      }
+    } else {
+      PrintExpr(op->args[8], os);
+    }
+    os << ", 128, 2)";  // unit_len=128, addr_unit_shift=2 (for 4-byte float elements)
+    return;
+  } else if (op->op.same_as(tl::dlc_sync())) {
+    // DLC sync operation: dlc_sync(tag)
+    ICHECK_EQ(op->args.size(), 1U);
+    os << "dlc_sync_new(";
+    PrintExpr(op->args[0], os);
+    os << ")";
+    return;
+  } else if (op->op.same_as(tl::dlc_sync_done())) {
+    // DLC sync done check: dlc_sync_done(tag)
+    ICHECK_EQ(op->args.size(), 1U);
+    os << "dlc_sync_done_new(";
+    PrintExpr(op->args[0], os);
+    os << ")";
+    return;
+  } else if (op->op.same_as(tl::dlc_sync_gte())) {
+    // DLC sync greater-than-or-equal: dlc_sync_gte(tag, value)
+    ICHECK_EQ(op->args.size(), 2U);
+    os << "dlc_sync_gte_new(";
+    PrintExpr(op->args[0], os);
+    os << ", ";
+    PrintExpr(op->args[1], os);
+    os << ")";
+    return;
+  } else if (op->op.same_as(tl::dlc_sync_clear())) {
+    // DLC sync clear: dlc_sync_clear(tag)
+    ICHECK_EQ(op->args.size(), 1U);
+    os << "dlc_sync_clear_new(";
+    PrintExpr(op->args[0], os);
+    os << ")";
+    return;
+  } else if (op->op.same_as(tl::dlc_barrier())) {
+    // DLC barrier: dlc_barrier()
+    os << "barrier()";
+    return;
+  } else if (op->op.same_as(tl::dlc_copy())) {
+    // DLC copy operation: dlc_copy(dst, src, size)
+    ICHECK_EQ(op->args.size(), 3U);
+    os << "vmem_copy(";
+    PrintExpr(op->args[0], os);
+    os << ", ";
+    PrintExpr(op->args[1], os);
+    os << ", ";
+    PrintExpr(op->args[2], os);
+    os << ")";
+    return;
+  } else if (op->op.same_as(tl::dlc_fill())) {
+    // DLC fill operation: dlc_fill(dst, value, size)
+    ICHECK_EQ(op->args.size(), 3U);
+    os << "vmem_fill(";
+    PrintExpr(op->args[0], os);
+    os << ", ";
+    PrintExpr(op->args[1], os);
+    os << ", ";
+    PrintExpr(op->args[2], os);
+    os << ")";
+    return;
+  }
+  
+  // For other operations, delegate to parent
+  CodeGenC::VisitExpr_(op, os);
 }
 
 std::string CodeGenTileLangDLC::Finish() {
