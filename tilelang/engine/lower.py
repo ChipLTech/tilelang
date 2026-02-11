@@ -10,7 +10,7 @@ from tvm import tir
 import tvm_ffi
 from tvm.ir import CallingConv
 from tvm.target import Target
-from tilelang.contrib import hipcc, nvcc
+from tilelang.contrib import hipcc, nvcc, dlcc
 from tilelang.env import COMPOSABLE_KERNEL_INCLUDE_DIR, CUTLASS_INCLUDE_DIR, TILELANG_TEMPLATE_PATH
 from tilelang.transform import PassConfigKey
 from tilelang.transform.metal import MarkHostMetalContext
@@ -198,7 +198,12 @@ def device_codegen_without_compile(device_mod: tvm.IRModule, target: Target) -> 
 
     # Check for DLC target first (before checking llvm kind)
     if target_is_dlc(target):
-        device_mod = tvm.ffi.get_global_func("target.build.tilelang_dlc")(device_mod, target)
+        # Try the without_compile version first, fall back to regular version if not available
+        try:
+            device_mod = tvm.ffi.get_global_func("target.build.tilelang_dlc_without_compile")(device_mod, target)
+        except ValueError:
+            # Fall back to regular version if without_compile is not registered yet
+            device_mod = tvm.ffi.get_global_func("target.build.tilelang_dlc")(device_mod, target)
     elif target.kind.name == "cuda":
         global_func = "target.build.tilelang_" + ("cutedsl" if "cutedsl" in target.keys else "cuda") + "_without_compile"
         device_mod = tvm.ffi.get_global_func(global_func)(device_mod, target)
