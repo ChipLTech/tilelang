@@ -28,42 +28,42 @@ using namespace tir;
   TVM_REGISTER_OP("tl." #OpName)                                               \
       .set_attr<TScriptPrinterName>("TScriptPrinterName", #OpName)
 
-// DLC binary operations
+// DLC binary operations (template_str, dst_ptr, src0_ptr, src1_ptr/scalar, size)
 TIR_DEFINE_TL_BUILTIN(dlc_add)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_add_scalar)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_sub)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_sub_scalar)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_mul)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_mul_scalar)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_div)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_div_scalar)
-    .set_num_inputs(4)
+    .set_num_inputs(5)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
-// DLC unary operations
+// DLC unary operations (template_str, dst_ptr, src_ptr, size)
 TIR_DEFINE_TL_BUILTIN(dlc_abs)
-    .set_num_inputs(3)
+    .set_num_inputs(4)
     .set_attr<TCallEffectKind>("TCallEffectKind", Integer(CallEffectKind::kOpaque));
 
 TIR_DEFINE_TL_BUILTIN(dlc_exp)

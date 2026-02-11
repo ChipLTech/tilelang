@@ -34,6 +34,10 @@ class CodeGenTileLangDLC : public CodeGenC {
   void PrintType(DataType t, std::ostream& os) final;
 
  private:
+  void EmitVectorBinaryOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os);
+  void EmitVectorScalarOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os);
+  void EmitVectorUnaryOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os);
+  
   ffi::Array<ffi::String> function_names_;
 };
 

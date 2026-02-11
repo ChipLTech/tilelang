@@ -344,10 +344,144 @@ void CodeGenTileLangDLC::VisitExpr_(const tir::CallNode* op, std::ostream& os) {
     PrintExpr(op->args[2], os);
     os << ")";
     return;
+  } else if (op->op.same_as(tl::dlc_add())) {
+    EmitVectorBinaryOp("v_f32_add_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_add_scalar())) {
+    EmitVectorScalarOp("v_f32_add_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_mul())) {
+    EmitVectorBinaryOp("v_f32_mul_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_mul_scalar())) {
+    EmitVectorScalarOp("v_f32_mul_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_sub())) {
+    EmitVectorBinaryOp("v_f32_sub_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_sub_scalar())) {
+    EmitVectorScalarOp("v_f32_sub_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_div())) {
+    EmitVectorBinaryOp("v_f32_div_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_div_scalar())) {
+    EmitVectorScalarOp("v_f32_div_b", op, os);
+    return;
+  } else if (op->op.same_as(tl::dlc_abs())) {
+    EmitVectorUnaryOp("v_f32_abs", op, os);
+    return;
   }
   
   // For other operations, delegate to parent
   CodeGenC::VisitExpr_(op, os);
+}
+
+void CodeGenTileLangDLC::EmitVectorBinaryOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os) {
+  // Generate loop with vector intrinsics for binary operations
+  // Args: template_str, dst_ptr, src0_ptr, src1_ptr, size
+  ICHECK_EQ(op->args.size(), 5U);
+  std::string var_name = name_supply_->FreshName("_dlc_vec");
+  os << "{\n";
+  PrintIndent();
+  os << "  float8_128 " << var_name << "_x, " << var_name << "_y, " << var_name << "_o;\n";
+  PrintIndent();
+  os << "  for (int " << var_name << "_i = 0; " << var_name << "_i < ";
+  PrintExpr(op->args[4], os);  // size
+  os << "; " << var_name << "_i += 1024) {\n";
+  PrintIndent();
+  os << "    int " << var_name << "_len = min(";
+  PrintExpr(op->args[4], os);  // size
+  os << " - " << var_name << "_i, 1024);\n";
+  PrintIndent();
+  os << "    int " << var_name << "_mask = pre_exp2(" << var_name << "_len/128);\n";
+  PrintIndent();
+  os << "    " << var_name << "_x = v_f32_ld_tnsr_st_msk(" << var_name << "_i/32, ";
+  PrintExpr(op->args[2], os);  // src0_ptr
+  os << ", 1, " << var_name << "_mask);\n";
+  PrintIndent();
+  os << "    " << var_name << "_y = v_f32_ld_tnsr_st_msk(" << var_name << "_i/32, ";
+  PrintExpr(op->args[3], os);  // src1_ptr
+  os << ", 1, " << var_name << "_mask);\n";
+  PrintIndent();
+  os << "    " << var_name << "_o = " << op_name << "(" << var_name << "_x, " << var_name << "_y);\n";
+  PrintIndent();
+  os << "    v_f32_st_tnsr_st_msk(" << var_name << "_i/32, ";
+  PrintExpr(op->args[1], os);  // dst_ptr
+  os << ", 1, " << var_name << "_mask, " << var_name << "_o);\n";
+  PrintIndent();
+  os << "  }\n";
+  PrintIndent();
+  os << "}";
+}
+
+void CodeGenTileLangDLC::EmitVectorScalarOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os) {
+  // Generate loop with vector intrinsics for scalar operations
+  // Args: template_str, dst_ptr, src_ptr, scalar, size
+  ICHECK_EQ(op->args.size(), 5U);
+  std::string var_name = name_supply_->FreshName("_dlc_vec");
+  os << "{\n";
+  PrintIndent();
+  os << "  float8_128 " << var_name << "_x, " << var_name << "_o;\n";
+  PrintIndent();
+  os << "  float8_128 " << var_name << "_scalar = ";
+  PrintExpr(op->args[3], os);  // scalar
+  os << ";\n";
+  PrintIndent();
+  os << "  for (int " << var_name << "_i = 0; " << var_name << "_i < ";
+  PrintExpr(op->args[4], os);  // size
+  os << "; " << var_name << "_i += 1024) {\n";
+  PrintIndent();
+  os << "    int " << var_name << "_len = min(";
+  PrintExpr(op->args[4], os);  // size
+  os << " - " << var_name << "_i, 1024);\n";
+  PrintIndent();
+  os << "    int " << var_name << "_mask = pre_exp2(" << var_name << "_len/128);\n";
+  PrintIndent();
+  os << "    " << var_name << "_x = v_f32_ld_tnsr_st_msk(" << var_name << "_i/32, ";
+  PrintExpr(op->args[2], os);  // src_ptr
+  os << ", 1, " << var_name << "_mask);\n";
+  PrintIndent();
+  os << "    " << var_name << "_o = " << op_name << "(" << var_name << "_x, " << var_name << "_scalar);\n";
+  PrintIndent();
+  os << "    v_f32_st_tnsr_st_msk(" << var_name << "_i/32, ";
+  PrintExpr(op->args[1], os);  // dst_ptr
+  os << ", 1, " << var_name << "_mask, " << var_name << "_o);\n";
+  PrintIndent();
+  os << "  }\n";
+  PrintIndent();
+  os << "}";
+}
+
+void CodeGenTileLangDLC::EmitVectorUnaryOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os) {
+  // Generate loop with vector intrinsics for unary operations
+  // Args: template_str, dst_ptr, src_ptr, size (in elements)
+  // Pattern: loop with step 32 (in 128-byte units), using v_f32_ld_tnsr_b/v_f32_st_tnsr_b
+  ICHECK_EQ(op->args.size(), 4U);
+  std::string var_name = name_supply_->FreshName("_dlc_vec");
+  os << "{\n";
+  PrintIndent();
+  os << "  int " << var_name << "_size128b = ";
+  PrintExpr(op->args[3], os);  // size in elements
+  os << " / 32;\n";  // Convert to 128-byte units (32 float32 = 128 bytes)
+  PrintIndent();
+  os << "#pragma clang loop unroll_count(2)\n";
+  PrintIndent();
+  os << "  for (int " << var_name << "_vs = 0; " << var_name << "_vs < " << var_name << "_size128b; " << var_name << "_vs += 32) {\n";
+  PrintIndent();
+  os << "    float8_128 " << var_name << "_x = v_f32_ld_tnsr_b(" << var_name << "_vs, ";
+  PrintExpr(op->args[2], os);  // src_ptr
+  os << ");\n";
+  PrintIndent();
+  os << "    " << var_name << "_x = " << op_name << "(" << var_name << "_x);\n";
+  PrintIndent();
+  os << "    v_f32_st_tnsr_b(" << var_name << "_vs, ";
+  PrintExpr(op->args[1], os);  // dst_ptr
+  os << ", " << var_name << "_x);\n";
+  PrintIndent();
+  os << "  }\n";
+  PrintIndent();
+  os << "}";
 }
 
 std::string CodeGenTileLangDLC::Finish() {

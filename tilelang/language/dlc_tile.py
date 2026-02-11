@@ -197,6 +197,35 @@ def fill(buffer: Union[Buffer, BufferRegion], value: PrimExpr):
     )
 
 
+def abs(
+    dst: Union[Buffer, BufferRegion],
+    src: Union[Buffer, BufferRegion],
+):
+    """Element-wise absolute value operation for DLC.
+    
+    Performs dst = abs(src) using DLC vector instructions.
+    
+    Args:
+        dst: Destination buffer or buffer region.
+        src: Source operand (buffer or buffer region).
+    
+    Returns:
+        A TVM intrinsic call that performs the absolute value operation.
+    """
+    dst_ptr, dst_size = _get_buffer_info(dst, "w")
+    src_ptr, src_size = _get_buffer_info(src, "r")
+    assert dst_size == src_size, "Buffer sizes must match"
+    
+    return tir.call_intrin(
+        "handle",
+        tir.op.Op.get("tl.dlc_abs"),
+        f"DLCAbs<{_dtype(dst)}>",
+        dst_ptr,
+        src_ptr,
+        dst_size,
+    )
+
+
 def dma(
     src: Union[Buffer, BufferRegion],
     src_space: PrimExpr,
