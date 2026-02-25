@@ -42,6 +42,7 @@ void CodeGenTileLangDLC::Init(bool output_ssa) {
   decl_stream << "#include \"typehint.h\"\n";
   decl_stream << "#include \"ldst.h\"\n";
   decl_stream << "#include \"kernel_arg_types.h\"\n";
+  decl_stream << "#include \"tilelang_template/binary_ops.hpp\"\n";
   decl_stream << "\n";
   CodeGenC::Init(output_ssa);
 }
@@ -378,41 +379,34 @@ void CodeGenTileLangDLC::VisitExpr_(const tir::CallNode* op, std::ostream& os) {
 }
 
 void CodeGenTileLangDLC::EmitVectorBinaryOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os) {
-  // Generate loop with vector intrinsics for binary operations
+  // Generate template function call for binary operations
   // Args: template_str, dst_ptr, src0_ptr, src1_ptr, size
   ICHECK_EQ(op->args.size(), 5U);
-  std::string var_name = name_supply_->FreshName("_dlc_vec");
-  os << "{\n";
-  PrintIndent();
-  os << "  float8_128 " << var_name << "_x, " << var_name << "_y, " << var_name << "_o;\n";
-  PrintIndent();
-  os << "  for (int " << var_name << "_i = 0; " << var_name << "_i < ";
-  PrintExpr(op->args[4], os);  // size
-  os << "; " << var_name << "_i += 1024) {\n";
-  PrintIndent();
-  os << "    int " << var_name << "_len = min(";
-  PrintExpr(op->args[4], os);  // size
-  os << " - " << var_name << "_i, 1024);\n";
-  PrintIndent();
-  os << "    int " << var_name << "_mask = pre_exp2(" << var_name << "_len/128);\n";
-  PrintIndent();
-  os << "    " << var_name << "_x = v_f32_ld_tnsr_st_msk(" << var_name << "_i/32, ";
-  PrintExpr(op->args[2], os);  // src0_ptr
-  os << ", 1, " << var_name << "_mask);\n";
-  PrintIndent();
-  os << "    " << var_name << "_y = v_f32_ld_tnsr_st_msk(" << var_name << "_i/32, ";
-  PrintExpr(op->args[3], os);  // src1_ptr
-  os << ", 1, " << var_name << "_mask);\n";
-  PrintIndent();
-  os << "    " << var_name << "_o = " << op_name << "(" << var_name << "_x, " << var_name << "_y);\n";
-  PrintIndent();
-  os << "    v_f32_st_tnsr_st_msk(" << var_name << "_i/32, ";
+  
+  // Map operation name to template enum
+  std::string template_op;
+  if (op_name == "v_f32_add_b") {
+    template_op = "ADD";
+  } else if (op_name == "v_f32_sub_b") {
+    template_op = "SUB";
+  } else if (op_name == "v_f32_mul_b") {
+    template_op = "MUL";
+  } else if (op_name == "v_f32_div_b" || op_name == "fp32_div") {
+    template_op = "DIV";
+  } else {
+    LOG(FATAL) << "Unknown binary operation: " << op_name;
+  }
+  
+  // Generate template function call
+  os << "binary_op_template<" << template_op << ">(";
   PrintExpr(op->args[1], os);  // dst_ptr
-  os << ", 1, " << var_name << "_mask, " << var_name << "_o);\n";
-  PrintIndent();
-  os << "  }\n";
-  PrintIndent();
-  os << "}";
+  os << ", ";
+  PrintExpr(op->args[2], os);  // src0_ptr
+  os << ", ";
+  PrintExpr(op->args[3], os);  // src1_ptr
+  os << ", ";
+  PrintExpr(op->args[4], os);  // size
+  os << ")";
 }
 
 void CodeGenTileLangDLC::EmitVectorScalarOp(const std::string& op_name, const tir::CallNode* op, std::ostream& os) {
